@@ -28,6 +28,12 @@ function sassImports(cb){
     glob('./mods/**/public/sass/' + baseTheme + '/*.scss', addFiles);
 }
 
+function appendVersion(contents){
+    return contents.split('</body>').slice(0, 1).join('') + 
+        '<script>' + os.EOL + 'var springboardBuildDate="' + new Date().toISOString() + '"' + os.EOL + '</script>' + os.EOL + 
+        '</body></html>';
+}
+
 function stringToStream(text) {
   var stream = through();
   stream.write(text);
@@ -38,20 +44,40 @@ function stringToStream(text) {
 function gulpSassImports(bt) {
     baseTheme = bt;
     return through.obj(function(file, enc, cb) {
-        sassImports(function(generatedImports){
+        
+        if(file.path.indexOf('.html') !== -1){
+            
             if (file.isNull()) {
                 // return empty file
                 return cb(null, file);
             }
+
+            const newFileContents = appendVersion(file.contents.toString());
             if (file.isBuffer()) {
-                file.contents = Buffer.concat([file.contents, generatedImports]);
+                file.contents = Buffer.from(newFileContents, 'utf8');
             }
             if (file.isStream()) {
-                file.contents = file.contents.pipe(stringToStream(generatedImports));
+                file.contents = stringToStream(newFileContents);
             }
 
-            cb(null, file);
-        });
+            return cb(null, file);
+        }
+        else{
+            sassImports(function(generatedImports){
+                if (file.isNull()) {
+                    // return empty file
+                    return cb(null, file);
+                }
+                if (file.isBuffer()) {
+                    file.contents = Buffer.concat([file.contents, generatedImports]);
+                }
+                if (file.isStream()) {
+                    file.contents = file.contents.pipe(stringToStream(generatedImports));
+                }
+    
+                return cb(null, file);
+            });
+        }
     });
 }
 
