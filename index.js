@@ -6,9 +6,7 @@ var glob = require("glob");
 var PluginError = gutil.PluginError;
 var os = require('os');
 
-var baseTheme = '';
-
-function sassImports(cb){
+function sassImports(baseTheme, cb){
     var psText = '';
     let n = 2;
     function addFiles(err, files){
@@ -63,7 +61,7 @@ function gulpSassImports(bt) {
             return cb(null, file);
         }
         else{
-            sassImports(function(generatedImports){
+            sassImports(bt, function(generatedImports){
                 if (file.isNull()) {
                     // return empty file
                     return cb(null, file);
